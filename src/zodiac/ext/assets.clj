@@ -51,7 +51,6 @@
       (memoize url-for)
       url-for)))
 
-
 (defn init [{:keys [asset-resource-path asset-url-path build?]
              :or {asset-resource-path ""
                   asset-url-path "/assets"
