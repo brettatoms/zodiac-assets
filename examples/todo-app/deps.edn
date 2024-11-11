@@ -1,0 +1,21 @@
+{:paths ["src" "resources"]
+ :deps {org.clojure/clojure {:mvn/version "1.12.0"}
+
+        com.github.brettatoms/zodiac {:mvn/version "0.3.34"}
+        com.github.brettatoms/zodiac-assets {:local/root "../../"}
+
+        babashka/fs {:mvn/version "0.4.19"}
+        com.taoensso/telemere {:mvn/version "1.0.0-RC1"}
+        com.taoensso/telemere-slf4j {:mvn/version "1.0.0-RC1"}
+        org.clojure/tools.logging {:mvn/version "1.3.0"}
+
+        integrant/integrant {:mvn/version "0.13.1"}}
+
+ :aliases {:main {:main-opts ["-m" "todo"]}
+           ;; Builds with clojure -X:uberjar
+           ;; Run with java -jar targets/todo.jar
+           :uberjar {:replace-deps {com.github.seancorfield/depstar {:mvn/version "2.1.303"}}
+                     :exec-fn hf.depstar/uberjar
+                     :exec-args {:aot true
+                                 :jar "todo.jar"
+                                 :main-class "todo"}}}}
