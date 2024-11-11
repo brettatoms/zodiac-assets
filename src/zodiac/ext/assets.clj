@@ -53,14 +53,14 @@
 
 
 (defn init [{:keys [asset-resource-path asset-url-path build?]
-            :or {asset-resource-path ""
-                 asset-url-path "/assets"
-                 build? true}
-            :as options}]
+             :or {asset-resource-path ""
+                  asset-url-path "/assets"
+                  build? true}
+             :as options}]
   (fn [config]
     (let [config (cond-> config
-                  ;; ;; Start the ::vite component with zodiac
-                  build? (assoc ::vite options))
+                   ;; ;; Start the ::vite component with zodiac
+                   build? (assoc ::vite options))
           resource-handler (reitit.ring/create-resource-handler {:path asset-url-path
                                                                  :root asset-resource-path})]
       (-> config
