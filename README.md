@@ -2,7 +2,7 @@
 
 [![Clojars Project](https://img.shields.io/clojars/v/com.github.brettatoms/zodiac-assets.svg)](https://clojars.org/com.github.brettatoms/zodiac-assets)
 
-A extension for [Zodiac](https://github.com/brettatoms/zodiac) to build and
+An extension for [Zodiac](https://github.com/brettatoms/zodiac) to build and
 serve static assets.
 
 This extension is built with [Vite](https://vite.dev/) and doesn't try to
