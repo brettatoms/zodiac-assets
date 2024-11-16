@@ -23,7 +23,7 @@ For an example of how to use this extension see [examples/todo-app](examples/tod
 
 ### Getting started
 
-``` clojure
+```clojure
 (ns myapp
   (:require [zodiac.core :as z]
             [zodiac.ext.assets :as z.assets]))
