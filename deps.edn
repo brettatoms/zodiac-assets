@@ -3,7 +3,8 @@
 
         integrant/integrant {:mvn/version "0.13.1"}
         babashka/fs {:mvn/version "0.4.19"}
-        org.clojure/data.json {:mvn/version "2.4.0"}}
+        org.clojure/data.json {:mvn/version "2.4.0"}
+        org.clojure/tools.logging {:mvn/version "1.3.0"}}
  :aliases {;; clojure -M:test
            :test {:extra-paths ["test"]
                   :extra-deps {com.gfredericks/test.chuck {:mvn/version "0.2.14"}
