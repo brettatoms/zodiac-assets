@@ -7,7 +7,7 @@
             [taoensso.telemere :as t]
             [taoensso.telemere.tools-logging :as tt]
             [zodiac.core :as z]
-            [zodiac.ext.assets :as assets]))
+            [zodiac.ext.assets :as z.assets]))
 
 ;; Logging setup
 (add-tap println)
@@ -95,15 +95,15 @@
 
 (defn -main [& _]
   (let [project-root (System/getenv "PWD")
-        assets-ext (assets/init {;; The config file is used by the vite command
-                                 ;; so it needs to be an absolute path on the
-                                 ;; filesystem, e.g. not in a jar.
-                                 :config-file (str (fs/path project-root "vite.config.js"))
-                                 ;; The manifest path is the relative resource
-                                 ;; path to the output manifest file. This value doesn't override the build
-                                 ;; time value for the output path of the manifest file.
-                                 :manifest-path  "todo/.vite/manifest.json"
-                                 :asset-resource-path "todo/assets"})
+        assets-ext (z.assets/init {;; The config file is used by the vite command
+                                   ;; so it needs to be an absolute path on the
+                                   ;; filesystem, e.g. not in a jar.
+                                   :config-file (str (fs/path project-root "vite.config.js"))
+                                   ;; The manifest path is the relative resource
+                                   ;; path to the output manifest file. This value doesn't override the build
+                                   ;; time value for the output path of the manifest file.
+                                   :manifest-path  "todo/.vite/manifest.json"
+                                   :asset-resource-path "todo/assets"})
         system-config {::db {}
                        ::zodiac {:extensions [assets-ext]
                                  :routes #'routes
