@@ -1,5 +1,8 @@
 # Change Log
 
+* 0.1.14 -- 2024-11-16
+  - Add missing dep
+
 * 0.1.13 -- 2024-11-16
   - Add missing deps
   - Rebuild docs
