@@ -51,10 +51,11 @@
       (memoize url-for)
       url-for)))
 
-(defn init [{:keys [asset-resource-path asset-url-path build?]
+(defn init [{:keys [asset-resource-path asset-url-path build? context-key]
              :or {asset-resource-path ""
                   asset-url-path "/assets"
-                  build? true}
+                  build? true
+                  context-key ::assets}
              :as options}]
   (fn [config]
     (let [config (cond-> config
@@ -66,5 +67,5 @@
           (assoc
            ;; Start the ::assets component with zodiac
            ::assets options)
-          (assoc-in [::z/middleware :context :assets] (ig/ref ::assets))
+          (assoc-in [::z/middleware :context context-key] (ig/ref ::assets))
           (update-in [::z/app :default-handlers]  #(cons resource-handler %))))))
