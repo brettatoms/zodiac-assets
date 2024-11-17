@@ -45,7 +45,8 @@
                                          (io/resource)
                                          (slurp)
                                          (json/read-str))]
-                    (get-in manifest [asset-name "file"])))]
+                    (when-let [url (get-in manifest [asset-name "file"])]
+                      (str "/" url))))]
     (if cache-manifest?
       (memoize url-for)
       url-for)))
