@@ -1,9 +1,9 @@
 # Change Log
 
 
-* 0.1.xx -- Unreleased
+* 0.1.18 -- 2024-11-17
   - Prefix asset urls with "/"
-  - Default context key to zodiac.ext.assets/assets
+  - Default context key to :zodiac.ext.assets/assets
   - Make context key configurable
 
 * 0.1.15 -- 2024-11-17
