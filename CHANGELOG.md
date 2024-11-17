@@ -1,5 +1,8 @@
 # Change Log
 
+* 0.1.15 -- 2024-11-17
+  - Don't throw an exception if the manifest file can't be found on startup.
+
 * 0.1.14 -- 2024-11-16
   - Add missing dep
 

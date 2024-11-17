@@ -38,8 +38,7 @@
 
 (defmethod ig/init-key ::assets [_ {:keys [manifest-path cache-manifest?]}]
   (when-not (io/resource manifest-path)
-    (log/error "Could not load find the manifest on the classpath: " manifest-path)
-    (throw (ex-info "Could not load manifest-path." {:manifest-path manifest-path})))
+    (log/warn "Could not load find the manifest on the classpath: " manifest-path))
 
   (let [url-for (fn [asset-name]
                   (let [manifest (some-> manifest-path
