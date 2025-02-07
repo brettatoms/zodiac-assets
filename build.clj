@@ -5,7 +5,7 @@
 
 (def lib 'com.github.brettatoms/zodiac-assets)
 
-(defn- version-base [patch] (format "0.1.%s" patch))
+(defn- version-base [patch] (format "0.2.%s" patch))
 (def version (version-base (b/git-count-revs nil)))
 (def snapshot (version-base "9999-SNAPSHOT"))
 (def class-dir "target/classes")
@@ -60,7 +60,6 @@
   (b/copy-dir {:src-dirs ["src" "resources"]
                :target-dir class-dir})
   (b/jar (jar-opts opts)))
-
 
 (defn ci "Run the CI pipeline of tests (and build the JAR)." [opts]
   (test opts)

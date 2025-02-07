@@ -30,8 +30,7 @@
   (when-not package-json-dir
     (log/warn "No package.json directory provided."))
   (let [p (process/start {:dir package-json-dir}
-                         "npm" "clean-install")
-        p-ref (process/exit-ref p)]
+                         "npm" "clean-install")]
     (capture-output p ::npm-install)
     @(process/exit-ref p) ;; wait for the process to finish
     p))
@@ -66,7 +65,7 @@
       (memoize url-for)
       url-for)))
 
-(defn init [{:keys [asset-resource-path asset-url-path build? context-key package-json-dir]
+(defn init [{:keys [asset-resource-path asset-url-path build? context-key]
              :or {asset-resource-path ""
                   asset-url-path "/assets"
                   build? true
