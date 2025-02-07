@@ -1,5 +1,7 @@
 # Change Log
 
+* 0.2.00 -- 2025-02-07
+  - Run "npm install" before starting vite
 
 * 0.1.18 -- 2024-11-17
   - Prefix asset urls with "/"
