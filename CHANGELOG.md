@@ -1,5 +1,9 @@
 # Change Log
 
+* 0.2.22 -- 2025-02-09
+  - Bump babashka/fs 0.4.19 -> 0.5.24
+  - Bump org.clojure/data.json 2.4.0 -> 2.5.1
+
 * 0.2.20 -- 2025-02-07
   - Run "npm install" before starting vite
 
