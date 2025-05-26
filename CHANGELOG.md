@@ -1,5 +1,9 @@
 # Change Log
 
+* 0.3.23 -- 2025-05-26
+  - Bump version babashka/fs 0.5.24 -> 0.5.25
+  - Bump version metosin/reitit 0.7.2 -> 0.9.0
+
 * 0.2.22 -- 2025-02-09
   - Bump babashka/fs 0.4.19 -> 0.5.24
   - Bump org.clojure/data.json 2.4.0 -> 2.5.1
