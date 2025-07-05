@@ -25,7 +25,8 @@ For an example of how to use this extension see [examples/todo-app](examples/tod
 
 ```clojure
 (ns myapp
-  (:require [zodiac.core :as z]
+  (:require [babashka.fs :as fs]
+            [zodiac.core :as z]
             [zodiac.ext.assets :as z.assets]))
 
 (defn handler [{:keys [::z/context]}]
