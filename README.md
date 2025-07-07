@@ -32,10 +32,11 @@ For an example of how to use this extension see [examples/todo-app](examples/tod
 (defn handler [{:keys [::z/context]}]
   ;; The assets function in the request context can be used
   ;; to get the url path to built assets from the Vite manifest.
-  (let [{:keys [assets]} context]
+  (let [{::z.assets/keys [assets]} context]
     [:html
      [:head
        [:script {:src (assets "src/myapp.ts")}]]
+       [:link {:repl "stylesheet" :src (assets "src/myapp.css")}]
      [:body
        [:div "hello world"]]]))
 
@@ -102,3 +103,4 @@ The `zodiac.ext.assets/init` accepts the following options:
   performance of resolve the assets paths from the `manifest.json`. Set to
   `false` if running vite in watch mode. Set to `true` in production. Defaults
   to `false`.
+- `context-key`: The name of the key to the `(assets)` function in the Zodiac request context.  Defaults to `:zodiac.ext.assets/assets`.
