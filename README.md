@@ -36,7 +36,7 @@ For an example of how to use this extension see [examples/todo-app](examples/tod
     [:html
      [:head
        [:script {:src (assets "src/myapp.ts")}]]
-       [:link {:repl "stylesheet" :src (assets "src/myapp.css")}]
+       [:link {:rel "stylesheet" :href (assets "src/myapp.css")}]
      [:body
        [:div "hello world"]]]))
 
