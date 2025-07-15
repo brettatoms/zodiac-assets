@@ -43,7 +43,7 @@ For an example of how to use this extension see [examples/todo-app](examples/tod
 (defn routes []
   ["/" {:get #'handler}])
 
-(let [project-root (-> *file* fs/parent fs/parent str)
+(let [project-root (-> *file* fs/parent fs/parent str) ;; WARNING: *file* only works in the repl
       assets-ext (z.assets/init {;; The config file is used by the vite command
                                  ;; so it needs to be an absolute path on the
                                  ;; filesystem, e.g. not in a jar.
