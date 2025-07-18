@@ -1,5 +1,8 @@
 # Change Log
 
+* 0.3.28 -- 2025-07-18
+  - Don't `npm install` when build? is false
+
 * 0.3.23 -- 2025-05-26
   - Bump version babashka/fs 0.5.24 -> 0.5.25
   - Bump version metosin/reitit 0.7.2 -> 0.9.0

@@ -20,13 +20,14 @@
            (.transferTo stderr)))
     (future
       ;; pipe stdout to the error log
-      (->> (log/log-stream :info namespace)
+      (->> (log/log-stream :debug namespace)
            (.transferTo stdout)))
     ;; Return the process
     process))
 
 (defmethod ig/init-key ::npm-install [_ {:keys [package-json-dir]}]
-  (log/info "$ npm clean-install")
+  (log/debug "$ npm clean-install")
+
   (when-not package-json-dir
     (log/warn "No package.json directory provided."))
   (let [p (process/start {:dir package-json-dir}
@@ -73,14 +74,16 @@
              :as options}]
   (fn [config]
     (let [config (cond-> config
-                   ;; ;; Start the ::vite component with zodiac
-                   build? (assoc ::vite options))
+                   build?
+                   (assoc ::vite options
+                          ::npm-install options))
+          ;; Install the dependencies and build the assets when Zodiac starts
+          options (cond-> options
+                    build?
+                    (assoc :__depends (ig/ref ::npm-install)))
           resource-handler (reitit.ring/create-resource-handler {:path asset-url-path
                                                                  :root asset-resource-path})]
       (-> config
-          (assoc
-           ;; Start the ::assets component with zodiac
-           ::assets (assoc options :__depends (ig/ref ::npm-install))
-           ::npm-install options)
+          (assoc ::assets options)
           (assoc-in [::z/middleware :context context-key] (ig/ref ::assets))
-          (update-in [::z/app :default-handlers]  #(cons resource-handler %))))))
+          (update-in [::z/app :default-handlers] #(cons resource-handler %))))))
