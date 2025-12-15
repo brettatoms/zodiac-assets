@@ -32,3 +32,4 @@ node_modules/
 .clj-kondo/
 .vite/
 examples/todo-app/resources/todo/assets/
+test/resources/test-project/dist/

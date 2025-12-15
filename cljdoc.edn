@@ -1,2 +1,4 @@
 {:cljdoc.doc/tree [["Readme" {:file "README.md"}]
+                   ["Configuration" {:file "doc/configuration.md"}]
+                   ["Vite Setup" {:file "doc/vite-setup.md"}]
                    ["Change Log" {:file "CHANGELOG.md"}]]}
