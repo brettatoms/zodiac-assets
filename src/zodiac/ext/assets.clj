@@ -6,10 +6,34 @@
             [clojure.string :as str]
             [clojure.tools.logging :as log]
             [integrant.core :as ig]
+            [malli.core :as m]
+            [malli.error :as me]
+            [malli.util :as mu]
             [reitit.ring]))
 
 (create-ns 'zodiac.core)
 (alias 'z 'zodiac.core)
+
+(def Options
+  "Malli schema for zodiac-assets options."
+  (mu/optional-keys
+   [:map
+    ;; Required: Resource path to the Vite manifest.json
+    [:manifest-path [:string {:min 1}]]
+    ;; Required: Resource path to built assets directory
+    [:asset-resource-path :string]
+    ;; URL path prefix for serving assets
+    [:asset-url-path :string]
+    ;; Absolute path to vite.config.js (required if build? is true)
+    [:config-file [:maybe :string]]
+    ;; Whether to run npm install and vite build
+    [:build? :boolean]
+    ;; Cache manifest reads (set true for production)
+    [:cache-manifest? :boolean]
+    ;; Context key for the assets function
+    [:context-key :keyword]
+    ;; Directory containing package.json for npm install
+    [:package-json-dir :string]]))
 
 (defn- capture-output [process namespace]
   (let [stdout (process/stdout process)
@@ -41,7 +65,7 @@
     (log/warn "Could not find path to npx. Starting vite will probably fail."))
   (let [vite-cmd (cond-> ["npx" "vite" "build"]
                    config-file (concat ["--config" config-file]))
-        _ (log/debug (str "Starting vite...\n") (str/join " " vite-cmd))
+        _ (log/debug (str "Starting vite...\n" (str/join " " vite-cmd)))
         p (apply process/start vite-cmd)]
     ;; capture-output returns the process
     (capture-output p ::vite)))
@@ -72,6 +96,12 @@
                   build? true
                   context-key ::assets}
              :as options}]
+
+  (when-not (m/validate Options options)
+    (let [errors (me/humanize (m/explain Options options))]
+      (log/error (str "Invalid zodiac-assets options: " errors))
+      (throw (ex-info "Invalid zodiac-assets options" {:validation-errors errors}))))
+
   (fn [config]
     (let [config (cond-> config
                    build?
