@@ -1,0 +1,7 @@
+{
+  "name": "zodiac-assets-test-project",
+  "private": true,
+  "devDependencies": {
+    "vite": "^6.0.0"
+  }
+}
