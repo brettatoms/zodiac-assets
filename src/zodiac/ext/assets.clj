@@ -1,6 +1,6 @@
 (ns zodiac.ext.assets
   (:require [babashka.fs :as fs]
-            [clojure.data.json :as json]
+            [charred.api :as json]
             [clojure.java.io :as io]
             [clojure.java.process :as process]
             [clojure.string :as str]
@@ -59,7 +59,7 @@
                   (let [manifest (some-> manifest-path
                                          (io/resource)
                                          (slurp)
-                                         (json/read-str))]
+                                         (json/read-json))]
                     (when-let [url (get-in manifest [asset-name "file"])]
                       (str "/" url))))]
     (if cache-manifest?
