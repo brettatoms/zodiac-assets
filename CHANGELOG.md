@@ -1,13 +1,14 @@
 # Change Log
 
-* 0.4.xx -- Unreleased
+* 0.4.34 -- 2025-12-15
   - Add options validation with Malli schema
   - Add metosin/malli 0.20.0
-  - Replace org.clojure/data.json with com.cnuernber/charred 1.037
   - Bump org.clojure/clojure 1.12.0 -> 1.12.4
   - Bump integrant/integrant 0.13.1 -> 1.0.1
   - Bump babashka/fs 0.5.25 -> 0.5.30
   - Bump metosin/reitit 0.9.0 -> 0.9.2
+  - Replace org.clojure/data.json with com.cnuernber/charred 1.037
+  - More tests and docs
 
 * 0.3.28 -- 2025-07-18
   - Don't `npm install` when build? is false
