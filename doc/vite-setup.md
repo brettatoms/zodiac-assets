@@ -134,24 +134,6 @@ export default defineConfig({
 })
 ```
 
-Vite handles TypeScript compilation automatically.
-
-### Tailwind CSS
-
-Install Tailwind and configure `postcss.config.js`:
-
-```javascript
-// postcss.config.js
-export default {
-  plugins: {
-    tailwindcss: {},
-    autoprefixer: {},
-  },
-}
-```
-
-No changes needed to `vite.config.js`—Vite picks up PostCSS config automatically.
-
 ### Multiple Entry Points
 
 ```javascript
