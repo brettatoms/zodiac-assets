@@ -101,7 +101,7 @@
   (.destroy p))
 
 (defmethod ig/init-key ::assets [_ {:keys [manifest-path cache-manifest?
-                                          vite-dev-server-url]}]
+                                           vite-dev-server-url]}]
   (if vite-dev-server-url
     ;; Dev server mode: resolve assets to Vite dev server URLs
     (fn [asset-name]
@@ -198,7 +198,7 @@
       paths)))
 
 (defn init [{:keys [asset-resource-path asset-url-path build? config-file context-key
-                     hot-reload watch-paths vite-port vite-host]
+                    hot-reload watch-paths vite-port vite-host]
              :or {asset-resource-path ""
                   asset-url-path "/assets"
                   build? true
