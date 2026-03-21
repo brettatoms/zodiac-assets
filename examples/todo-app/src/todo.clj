@@ -1,7 +1,6 @@
 (ns todo
   (:gen-class)
-  (:require [babashka.fs :as fs]
-            [clojure.data.json :as json]
+  (:require [charred.api :as json]
             [integrant.core :as ig]
             [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
             [taoensso.telemere :as t]
@@ -37,7 +36,7 @@
       [:span {:class "mr-8 flex-1"}
        (:title item)]
       [:button {:hx-delete (z/url-for :root)
-                :hx-headers (json/write-str {:X-CSRF-Token (force *anti-forgery-token*)})
+                :hx-headers (json/write-json-str {:X-CSRF-Token (force *anti-forgery-token*)})
                 :hx-target "#todo-list"
                 :hx-confirm "Are you sure?"
                 :class "text-red-500"
@@ -63,10 +62,10 @@
       (form)
       (todo-list @db)]]
      [:script {:src (assets "src/todo.ts")
-               :defer true}]]])
+               :type "module"}]]])
 
 (defn handler [{:keys [::z/context request-method form-params]}]
-  (let [{:keys [assets db]} context]
+  (let [{::z.assets/keys [assets] :keys [db]} context]
     (case request-method
       :get (render :assets assets
                    :db db)
@@ -95,15 +94,11 @@
 
 (defn -main [& _]
   (let [project-root (System/getenv "PWD")
-        assets-ext (z.assets/init {;; The config file is used by the vite command
-                                   ;; so it needs to be an absolute path on the
-                                   ;; filesystem, e.g. not in a jar.
-                                   :config-file (str (fs/path project-root "vite.config.js"))
-                                   ;; The manifest path is the relative resource
-                                   ;; path to the output manifest file. This value doesn't override the build
-                                   ;; time value for the output path of the manifest file.
-                                   :manifest-path  "todo/.vite/manifest.json"
-                                   :asset-resource-path "todo/assets"})
+        assets-ext (z.assets/init {:manifest-path "todo/.vite/manifest.json"
+                                   :asset-resource-path "todo/assets"
+                                   :package-json-dir project-root
+                                   :hot-reload :dev-server
+                                   :build? false})
         system-config {::db {}
                        ::zodiac {:extensions [assets-ext]
                                  :routes #'routes

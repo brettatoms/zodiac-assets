@@ -5,3 +5,8 @@
 [x-cloak] {
     display: none;
 }
+
+body {
+    /* UNCOMMENT THE LINE BELOW AND SEE THE CHANGE HOT RELOAD */
+    /* background: red; */
+}

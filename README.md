@@ -92,7 +92,7 @@ The `zodiac.ext.assets/init` accepts the following options:
 
 - `:manifest-path`: The resource path to the Vite manifest.json json. Required.
 - `:asset-resource-path`. The resource path the build assets. This should be the
-  same os the `asset-dir` Vite config. Required.
+  same as the `asset-dir` Vite config. Required.
 - `:config-file`: The absolute path to the vite config file. This file is
   required if `:build?` is true.
 - `:build?`: Whether to run `vite build` to build the assets. Set to false if
@@ -103,4 +103,75 @@ The `zodiac.ext.assets/init` accepts the following options:
   performance of resolve the assets paths from the `manifest.json`. Set to
   `false` if running vite in watch mode. Set to `true` in production. Defaults
   to `false`.
-- `context-key`: The name of the key to the `(assets)` function in the Zodiac request context.  Defaults to `:zodiac.ext.assets/assets`.
+- `:context-key`: The name of the key to the `(assets)` function in the Zodiac
+  request context. Defaults to `:zodiac.ext.assets/assets`.
+- `:hot-reload`: Hot reload mode. Set to `:build` for standalone hot reload with
+  `vite build --watch`, or `:dev-server` for Vite dev server mode with CSS/JS HMR.
+  Omit for no hot reload (production). See [Hot Reload](#hot-reload) below.
+- `:watch-paths`: Directories to watch for file changes during hot reload.
+  Defaults to `["src"]` plus the Vite output directory if it exists.
+- `:vite-port`: Vite dev server port. Default `5173`. Only used in `:dev-server` mode.
+- `:vite-host`: Vite dev server host. Default `"localhost"`. Only used in `:dev-server` mode.
+- `:package-json-dir`: Directory containing `package.json` for `npm install`.
+
+### Hot Reload
+
+zodiac-assets integrates with [ring-hot-reload](https://github.com/brettatoms/ring-hot-reload)
+to provide automatic browser updates when files change during development.
+
+#### Build mode (`:hot-reload :build`)
+
+Uses `vite build --watch` to rebuild assets and ring-hot-reload's standalone
+WebSocket to notify the browser. All file changes (Clojure, templates, rebuilt
+assets) trigger a full page morph.
+
+```clojure
+(z.assets/init {:manifest-path "myapp/.vite/manifest.json"
+                :asset-resource-path "myapp/assets"
+                :config-file "/path/to/vite.config.js"
+                :hot-reload :build
+                :cache-manifest? false})
+```
+
+#### Dev server mode (`:hot-reload :dev-server`)
+
+Starts a Vite dev server for instant CSS/JS HMR, and uses ring-hot-reload for
+Clojure/template changes. Assets are served directly from the Vite dev server.
+
+```clojure
+(z.assets/init {:manifest-path "myapp/.vite/manifest.json"
+                :asset-resource-path "myapp/assets"
+                :hot-reload :dev-server
+                :build? false})
+```
+
+In this mode:
+- CSS/JS changes are handled instantly by Vite's native HMR (no page reload)
+- Clojure source changes require REPL eval, then ring-hot-reload morphs the page
+- Template/static file changes take effect on save (read from disk each request)
+- `(assets "src/app.js")` returns `http://localhost:5173/src/app.js` instead of
+  a manifest-resolved path
+
+#### nREPL middleware
+
+For the best development experience, add the ring-hot-reload nREPL middleware
+so that evaluating code in your editor triggers a browser reload automatically —
+no file save needed.
+
+Add `.nrepl.edn` to your project:
+
+```clojure
+{:middleware [ring.hot-reload.nrepl/wrap-hot-reload-nrepl]}
+```
+
+Or configure it in CIDER via `.dir-locals.el` (appends to the existing middleware list):
+
+```elisp
+((clojure-mode
+  (eval . (progn
+            (make-local-variable 'cider-jack-in-nrepl-middlewares)
+            (add-to-list 'cider-jack-in-nrepl-middlewares "ring.hot-reload.nrepl/wrap-hot-reload-nrepl")))))
+```
+
+See the [ring-hot-reload README](https://github.com/brettatoms/ring-hot-reload)
+for more setup options and details.

@@ -1,5 +1,8 @@
 # Change Log
 
+* 0.5.xx -- Unreleased
+  - Add hot reload support using ring-hot-reload
+
 * 0.4.34 -- 2025-12-15
   - Add options validation with Malli schema
   - Add metosin/malli 0.20.0
