@@ -1,6 +1,6 @@
 # Change Log
 
-* 0.5.xx -- Unreleased
+* 0.5.40 -- 2026-03-21
   - Add hot reload support using ring-hot-reload
 
 * 0.4.34 -- 2025-12-15
