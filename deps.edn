@@ -3,7 +3,7 @@
 
         babashka/fs {:mvn/version "0.5.30"}
         com.cnuernber/charred {:mvn/version "1.037"}
-        com.github.brettatoms/ring-hot-reload {:mvn/version "0.1.2"}
+        com.github.brettatoms/ring-hot-reload {:mvn/version "0.1.5"}
         integrant/integrant {:mvn/version "1.0.1"}
         metosin/malli {:mvn/version "0.20.0"}
         metosin/reitit {:mvn/version "0.9.2"}
