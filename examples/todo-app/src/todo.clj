@@ -96,9 +96,8 @@
   (let [project-root (System/getenv "PWD")
         assets-ext (z.assets/init {:manifest-path "todo/.vite/manifest.json"
                                    :asset-resource-path "todo/assets"
-                                   :package-json-dir project-root
-                                   :hot-reload :dev-server
-                                   :build? false})
+                                   :vite {:mode :dev-server
+                                          :package-json-dir project-root}})
         system-config {::db {}
                        ::zodiac {:extensions [assets-ext]
                                  :routes #'routes
