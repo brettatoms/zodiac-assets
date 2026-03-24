@@ -1,17 +1,27 @@
 # Change Log
 
 * 0.6.xx -- 2026-03-23
-  - Replace `:build?`, `:hot-reload`, `:config-file`, `:package-json-dir`,
-    `:vite-host`, `:vite-port` with single `:vite` map option
-    (`{:mode :build}`, `{:mode :dev-server}`, or `nil`)
-  - Merge `::vite` and `::vite-dev-server` into single `::vite` Integrant
-    component with `:mode`
-  - Remove `::hot-reload` and `::hot-reload-middleware` Integrant components
-  - `::assets` now takes a vite ref directly instead of a pre-computed URL
-  - Use malli `:orn` schema for `:vite` option with per-mode validation
+
+  **BREAKING CHANGES:**
+  - `:build?` removed — use `:vite {:mode :build}` (default) or `:vite nil` to
+    skip vite
+  - `:hot-reload` removed — use
+    [zodiac-hot-reload](https://github.com/brettatoms/zodiac-hot-reload) instead
+  - `:config-file` moved into `:vite` map — `:vite {:config-file "..."}`
+  - `:package-json-dir` moved into `:vite` map — `:vite {:package-json-dir "..."}`
+  - `:vite-host` and `:vite-port` replaced by `:vite {:host "..." :port ...}`
+  - `::vite-dev-server` Integrant component removed — use `::vite` with
+    `:mode :dev-server`
+  - `::hot-reload` and `::hot-reload-middleware` Integrant components removed
+  - `ring-hot-reload` dependency removed
+
+  Other changes:
+  - Single `:vite` map option replaces multiple top-level keys
+  - `::assets` takes a vite ref directly instead of a pre-computed URL
+  - Malli `:orn` schema with per-mode validation (`ViteBuild`, `ViteDevServer`)
   - Default values (`:mode`, `:host`, `:port`) driven by malli schema
   - `:config-file` no longer required; Vite auto-resolves config in project root
-  - Remove ring-hot-reload dependency (hot reload is now a separate concern)
+  - `::vite-client-middleware` injects `@vite/client` in dev-server mode
   - Bump com.cnuernber/charred 1.037 -> 1.038
   - Bump metosin/malli 0.20.0 -> 0.20.1
   - Bump metosin/reitit 0.9.2 -> 0.10.1
