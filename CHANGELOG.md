@@ -1,6 +1,6 @@
 # Change Log
 
-* 0.6.xx -- 2026-03-23
+* 0.6.48 -- 2026-03-23
 
   **BREAKING CHANGES:**
   - `:build?` removed — use `:vite {:mode :build}` (default) or `:vite nil` to
