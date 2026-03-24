@@ -1,7 +1,6 @@
 # Change Log
 
 * 0.5.xx -- 2026-03-23
-  - Remove ring-hot-reload dependency (hot reload is now a separate concern)
   - Replace `:build?`, `:hot-reload`, `:config-file`, `:package-json-dir`,
     `:vite-host`, `:vite-port` with single `:vite` map option
     (`{:mode :build}`, `{:mode :dev-server}`, or `nil`)
@@ -12,6 +11,10 @@
   - Use malli `:orn` schema for `:vite` option with per-mode validation
   - Default values (`:mode`, `:host`, `:port`) driven by malli schema
   - `:config-file` no longer required; Vite auto-resolves config in project root
+  - Remove ring-hot-reload dependency (hot reload is now a separate concern)
+  - Bump com.cnuernber/charred 1.037 -> 1.038
+  - Bump metosin/malli 0.20.0 -> 0.20.1
+  - Bump metosin/reitit 0.9.2 -> 0.10.1
 
 * 0.5.40 -- 2026-03-21
   - Add hot reload support using ring-hot-reload
