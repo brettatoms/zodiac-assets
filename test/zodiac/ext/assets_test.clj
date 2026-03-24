@@ -107,37 +107,83 @@
   (testing "init uses correct defaults"
     (let [config-fn (z.assets/init {:manifest-path "test/.vite/manifest.json"})
           config (config-fn {})]
-      ;; build? defaults to true, so ::vite and ::npm-install should be present
+      ;; vite defaults to {:mode :build}, so ::vite and ::npm-install should be present
       (is (contains? config ::z.assets/vite))
       (is (contains? config ::z.assets/npm-install))
       (is (contains? config ::z.assets/assets)))))
 
-(deftest init-build-false-test
-  (testing "with build? false, ::vite and ::npm-install are not added"
+(deftest init-vite-nil-test
+  (testing "with vite nil, ::vite and ::npm-install are not added"
     (let [config-fn (z.assets/init {:manifest-path "test/.vite/manifest.json"
-                                    :build? false})
+                                    :vite nil})
           config (config-fn {})]
       (is (not (contains? config ::z.assets/vite)))
       (is (not (contains? config ::z.assets/npm-install)))
       (is (contains? config ::z.assets/assets)))))
 
-(deftest init-build-true-test
-  (testing "with build? true, ::vite and ::npm-install are added"
+(deftest init-vite-build-test
+  (testing "with vite {:mode :build}, ::vite and ::npm-install are added"
     (let [config-fn (z.assets/init {:manifest-path "test/.vite/manifest.json"
-                                    :build? true
-                                    :config-file "/path/to/vite.config.js"})
+                                    :vite {:mode :build
+                                           :config-file "/path/to/vite.config.js"}})
           config (config-fn {})]
       (is (contains? config ::z.assets/vite))
       (is (contains? config ::z.assets/npm-install))
-      ;; Check that vite depends on npm-install
-      (is (= (ig/ref ::z.assets/npm-install)
-             (get-in config [::z.assets/assets :__depends]))))))
+      ;; Check that assets refs vite
+      (is (= (ig/ref ::z.assets/vite)
+             (get-in config [::z.assets/assets :vite]))))))
+
+(deftest init-vite-dev-server-test
+  (testing "with vite {:mode :dev-server}, ::vite is configured for dev server"
+    (let [config-fn (z.assets/init {:manifest-path "test/.vite/manifest.json"
+                                    :vite {:mode :dev-server
+                                           :host "0.0.0.0"
+                                           :port 3000}})
+          config (config-fn {})]
+      (is (contains? config ::z.assets/vite))
+      (is (= :dev-server (get-in config [::z.assets/vite :mode])))
+      (is (= "0.0.0.0" (get-in config [::z.assets/vite :host])))
+      (is (= 3000 (get-in config [::z.assets/vite :port]))))))
+
+(deftest init-vite-empty-map-defaults-to-build-test
+  (testing "empty vite map defaults to :mode :build"
+    (let [config-fn (z.assets/init {:manifest-path "test/.vite/manifest.json"
+                                    :vite {}})
+          config (config-fn {})]
+      (is (contains? config ::z.assets/vite))
+      (is (= :build (get-in config [::z.assets/vite :mode]))))))
+
+(deftest init-vite-dev-server-defaults-test
+  (testing "dev-server mode gets default host and port"
+    (let [config-fn (z.assets/init {:manifest-path "test/.vite/manifest.json"
+                                    :vite {:mode :dev-server}})
+          config (config-fn {})]
+      (is (= :dev-server (get-in config [::z.assets/vite :mode])))
+      (is (= "localhost" (get-in config [::z.assets/vite :host])))
+      (is (= 5173 (get-in config [::z.assets/vite :port]))))))
+
+(deftest init-vite-dev-server-partial-override-test
+  (testing "dev-server mode with partial overrides keeps other defaults"
+    (let [config-fn (z.assets/init {:manifest-path "test/.vite/manifest.json"
+                                    :vite {:mode :dev-server :port 3000}})
+          config (config-fn {})]
+      (is (= "localhost" (get-in config [::z.assets/vite :host])))
+      (is (= 3000 (get-in config [::z.assets/vite :port]))))))
+
+(deftest init-vite-build-no-host-port-test
+  (testing "build mode does not get host or port"
+    (let [config-fn (z.assets/init {:manifest-path "test/.vite/manifest.json"
+                                    :vite {:mode :build}})
+          config (config-fn {})]
+      (is (= :build (get-in config [::z.assets/vite :mode])))
+      (is (nil? (get-in config [::z.assets/vite :host])))
+      (is (nil? (get-in config [::z.assets/vite :port]))))))
 
 (deftest init-custom-context-key-test
   (testing "custom context-key is used in middleware context"
     (let [custom-key :my-app/assets
           config-fn (z.assets/init {:manifest-path "test/.vite/manifest.json"
-                                    :build? false
+                                    :vite nil
                                     :context-key custom-key})
           config (config-fn {})]
       ;; The context key should be used in the middleware context
@@ -147,7 +193,7 @@
 (deftest init-resource-handler-added-test
   (testing "resource handler is prepended to default-handlers"
     (let [config-fn (z.assets/init {:manifest-path "test/.vite/manifest.json"
-                                    :build? false})
+                                    :vite nil})
           existing-handler (fn [_] nil)
           config (config-fn {:zodiac.core/app {:default-handlers [existing-handler]}})]
       ;; Should have 2 handlers now (resource handler + existing)
@@ -210,7 +256,7 @@
 (deftest asset-url-path-without-leading-slash-test
   (testing "asset-url-path without leading slash is passed to resource handler"
     (let [config-fn (z.assets/init {:manifest-path "test/.vite/manifest.json"
-                                    :build? false
+                                    :vite nil
                                     :asset-url-path "static"})
           config (config-fn {})]
       ;; Config should be created without error
@@ -219,7 +265,7 @@
 (deftest asset-url-path-nested-test
   (testing "asset-url-path with nested path works"
     (let [config-fn (z.assets/init {:manifest-path "test/.vite/manifest.json"
-                                    :build? false
+                                    :vite nil
                                     :asset-url-path "/public/assets"})
           config (config-fn {})]
       (is (contains? config ::z.assets/assets)))))
@@ -227,7 +273,7 @@
 (deftest asset-url-path-root-test
   (testing "asset-url-path as root path works"
     (let [config-fn (z.assets/init {:manifest-path "test/.vite/manifest.json"
-                                    :build? false
+                                    :vite nil
                                     :asset-url-path "/"})
           config (config-fn {})]
       (is (contains? config ::z.assets/assets)))))
@@ -235,7 +281,7 @@
 (deftest asset-url-path-with-trailing-slash-test
   (testing "asset-url-path with trailing slash works"
     (let [config-fn (z.assets/init {:manifest-path "test/.vite/manifest.json"
-                                    :build? false
+                                    :vite nil
                                     :asset-url-path "/assets/"})
           config (config-fn {})]
       (is (contains? config ::z.assets/assets)))))
@@ -245,7 +291,7 @@
 (deftest asset-resource-path-empty-string-test
   (testing "asset-resource-path as empty string (default) works"
     (let [config-fn (z.assets/init {:manifest-path "test/.vite/manifest.json"
-                                    :build? false
+                                    :vite nil
                                     :asset-resource-path ""})
           config (config-fn {})]
       (is (contains? config ::z.assets/assets)))))
@@ -253,7 +299,7 @@
 (deftest asset-resource-path-nested-test
   (testing "asset-resource-path with nested path works"
     (let [config-fn (z.assets/init {:manifest-path "test/.vite/manifest.json"
-                                    :build? false
+                                    :vite nil
                                     :asset-resource-path "public/build/assets"})
           config (config-fn {})]
       (is (contains? config ::z.assets/assets)))))
@@ -261,28 +307,26 @@
 (deftest asset-resource-path-with-leading-slash-test
   (testing "asset-resource-path with leading slash is passed through"
     (let [config-fn (z.assets/init {:manifest-path "test/.vite/manifest.json"
-                                    :build? false
+                                    :vite nil
                                     :asset-resource-path "/myapp/assets"})
           config (config-fn {})]
       (is (contains? config ::z.assets/assets)))))
 
 ;; --- config-file variations ---
 
-(deftest config-file-nil-test
-  (testing "config-file as nil doesn't add --config flag to vite command"
+(deftest config-file-absent-test
+  (testing "config-file absent doesn't add --config flag to vite command"
     (let [config-fn (z.assets/init {:manifest-path "test/.vite/manifest.json"
-                                    :build? true
-                                    :config-file nil})
+                                    :vite {}})
           config (config-fn {})]
-      ;; vite config should have nil config-file
+      ;; vite config should not have config-file
       (is (nil? (get-in config [::z.assets/vite :config-file]))))))
 
 (deftest config-file-absolute-path-test
   (testing "config-file with absolute path is stored in config"
     (let [abs-path "/home/user/project/vite.config.js"
           config-fn (z.assets/init {:manifest-path "test/.vite/manifest.json"
-                                    :build? true
-                                    :config-file abs-path})
+                                    :vite {:config-file abs-path}})
           config (config-fn {})]
       (is (= abs-path (get-in config [::z.assets/vite :config-file]))))))
 
@@ -290,8 +334,7 @@
   (testing "config-file with relative path is stored in config"
     (let [rel-path "./vite.config.js"
           config-fn (z.assets/init {:manifest-path "test/.vite/manifest.json"
-                                    :build? true
-                                    :config-file rel-path})
+                                    :vite {:config-file rel-path}})
           config (config-fn {})]
       (is (= rel-path (get-in config [::z.assets/vite :config-file]))))))
 
@@ -302,8 +345,7 @@
     (let [config-fn (z.assets/init {:manifest-path "myapp/build/.vite/manifest.json"
                                     :asset-resource-path "myapp/build/assets"
                                     :asset-url-path "/static/assets"
-                                    :config-file "/project/vite.config.js"
-                                    :build? true})
+                                    :vite {:config-file "/project/vite.config.js"}})
           config (config-fn {})]
       (is (contains? config ::z.assets/assets))
       (is (contains? config ::z.assets/vite))
@@ -315,7 +357,7 @@
 (deftest paths-minimal-config-test
   (testing "minimal config with only required manifest-path works"
     (let [config-fn (z.assets/init {:manifest-path "app/.vite/manifest.json"
-                                    :build? false})
+                                    :vite nil})
           config (config-fn {})]
       (is (contains? config ::z.assets/assets))
       ;; Should use defaults for other paths
@@ -330,28 +372,28 @@
     (is (thrown-with-msg? clojure.lang.ExceptionInfo
                           #"Invalid zodiac-assets options"
                           (z.assets/init {:manifest-path ""
-                                          :build? false})))))
+                                          :vite nil})))))
 
 (deftest options-validation-manifest-path-wrong-type-test
   (testing "non-string manifest-path fails validation"
     (is (thrown-with-msg? clojure.lang.ExceptionInfo
                           #"Invalid zodiac-assets options"
                           (z.assets/init {:manifest-path 123
-                                          :build? false})))))
+                                          :vite nil})))))
 
-(deftest options-validation-build-wrong-type-test
-  (testing "non-boolean build? fails validation"
+(deftest options-validation-vite-mode-wrong-type-test
+  (testing "invalid vite mode fails validation"
     (is (thrown-with-msg? clojure.lang.ExceptionInfo
                           #"Invalid zodiac-assets options"
                           (z.assets/init {:manifest-path "test/.vite/manifest.json"
-                                          :build? "true"})))))
+                                          :vite {:mode "build"}})))))
 
 (deftest options-validation-context-key-wrong-type-test
   (testing "non-keyword context-key fails validation"
     (is (thrown-with-msg? clojure.lang.ExceptionInfo
                           #"Invalid zodiac-assets options"
                           (z.assets/init {:manifest-path "test/.vite/manifest.json"
-                                          :build? false
+                                          :vite nil
                                           :context-key "my-assets"})))))
 
 (deftest options-validation-cache-manifest-wrong-type-test
@@ -359,7 +401,7 @@
     (is (thrown-with-msg? clojure.lang.ExceptionInfo
                           #"Invalid zodiac-assets options"
                           (z.assets/init {:manifest-path "test/.vite/manifest.json"
-                                          :build? false
+                                          :vite nil
                                           :cache-manifest? "false"})))))
 
 (deftest options-validation-valid-options-test
@@ -367,8 +409,8 @@
     (let [config-fn (z.assets/init {:manifest-path "test/.vite/manifest.json"
                                     :asset-resource-path "test/assets"
                                     :asset-url-path "/static"
-                                    :config-file "/path/to/vite.config.js"
-                                    :build? true
+                                    :vite {:mode :build
+                                           :config-file "/path/to/vite.config.js"}
                                     :cache-manifest? true
                                     :context-key :my-app/assets})]
       (is (fn? config-fn)))))
@@ -377,10 +419,10 @@
   (testing "validation error contains details about what failed"
     (try
       (z.assets/init {:manifest-path 123
-                      :build? "not-a-boolean"})
+                      :vite {:mode "not-a-keyword"}})
       (is false "Should have thrown")
       (catch clojure.lang.ExceptionInfo e
         (let [errors (:validation-errors (ex-data e))]
           (is (some? errors))
           (is (contains? errors :manifest-path))
-          (is (contains? errors :build?)))))))
+          (is (contains? errors :vite)))))))

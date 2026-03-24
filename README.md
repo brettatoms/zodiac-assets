@@ -44,18 +44,19 @@ For an example of how to use this extension see [examples/todo-app](examples/tod
   ["/" {:get #'handler}])
 
 (let [project-root (-> *file* fs/parent fs/parent str) ;; WARNING: *file* only works in the repl
-      assets-ext (z.assets/init {;; The config file is used by the vite command
-                                 ;; so it needs to be an absolute path on the
-                                 ;; filesystem, e.g. not in a jar.
-                                 :config-file (str (fs/path project-root "vite.config.js"))
-                                 ;; The manifest path is the relative resource
+      assets-ext (z.assets/init {;; The manifest path is the relative resource
                                  ;; path to the output manifest file. This value doesn't override the build
                                  ;; time value for the output path of the manifest file.  By default
                                  ;; the manifest file is written to <outDir>/.vite/manifest.json
                                  :manifest-path  "myapp/.vite/manifest.json"
                                  ;; The resource path the the built assets. By default the build assets
                                  ;; are written to  <outDir>/assets
-                                 :asset-resource-path "myapp/assets"})]
+                                 :asset-resource-path "myapp/assets"
+                                 ;; Vite configuration. The config file is used
+                                 ;; by the vite command so it needs to be an
+                                 ;; absolute path on the filesystem, e.g. not
+                                 ;; in a jar.
+                                 :vite {:config-file (str (fs/path project-root "vite.config.js"))}})]
   (z/start {:extensions [assets-ext]
             :routes routes})
 ```
@@ -90,88 +91,46 @@ export default defineConfig({
 
 The `zodiac.ext.assets/init` accepts the following options:
 
-- `:manifest-path`: The resource path to the Vite manifest.json json. Required.
-- `:asset-resource-path`. The resource path the build assets. This should be the
+- `:manifest-path`: The resource path to the Vite manifest.json. Required.
+- `:asset-resource-path`: The resource path to the built assets. This should be the
   same as the `asset-dir` Vite config. Required.
-- `:config-file`: The absolute path to the vite config file. This file is
-  required if `:build?` is true.
-- `:build?`: Whether to run `vite build` to build the assets. Set to false if
-  you only want to use this extension to lookup assets from the vite manifest.
-  Defaults to `true`.
 - `:cache-manifest?`: Set to true to cache the manifest file the first time it
   is read instead of reading it on every request. This will improve the
-  performance of resolve the assets paths from the `manifest.json`. Set to
+  performance of resolving the asset paths from the `manifest.json`. Set to
   `false` if running vite in watch mode. Set to `true` in production. Defaults
   to `false`.
 - `:context-key`: The name of the key to the `(assets)` function in the Zodiac
   request context. Defaults to `:zodiac.ext.assets/assets`.
-- `:hot-reload`: Hot reload mode. Set to `:build` for standalone hot reload with
-  `vite build --watch`, or `:dev-server` for Vite dev server mode with CSS/JS HMR.
-  Omit for no hot reload (production). See [Hot Reload](#hot-reload) below.
-- `:watch-paths`: Directories to watch for file changes during hot reload.
-  Defaults to `["src"]` plus the Vite output directory if it exists.
-- `:vite-port`: Vite dev server port. Default `5173`. Only used in `:dev-server` mode.
-- `:vite-host`: Vite dev server host. Default `"localhost"`. Only used in `:dev-server` mode.
-- `:package-json-dir`: Directory containing `package.json` for `npm install`.
+- `:vite`: Vite configuration map, or `nil` to skip Vite entirely (just serve
+  pre-built assets from the manifest). Defaults to `{:mode :build}`. Accepts:
+  - `:mode` — `:build` (default, runs `npm install` + `vite build`) or
+    `:dev-server` (runs `npm install` + starts the Vite dev server)
+  - `:config-file` — absolute path to the vite config file. If omitted, Vite
+    will auto-resolve `vite.config.js` (or `.ts`, `.mjs`) in the project root.
+  - `:package-json-dir` — directory containing `package.json` for `npm install`
+  - `:host` — dev server host (default `"localhost"`, `:dev-server` mode only)
+  - `:port` — dev server port (default `5173`, `:dev-server` mode only)
 
-### Hot Reload
+### Dev Server Mode
 
-zodiac-assets integrates with [ring-hot-reload](https://github.com/brettatoms/ring-hot-reload)
-to provide automatic browser updates when files change during development.
-
-#### Build mode (`:hot-reload :build`)
-
-Uses `vite build --watch` to rebuild assets and ring-hot-reload's standalone
-WebSocket to notify the browser. All file changes (Clojure, templates, rebuilt
-assets) trigger a full page morph.
+Set `:vite {:mode :dev-server}` to use the Vite dev server instead of `vite build`.
+Assets are served directly from the Vite dev server, providing instant CSS/JS
+HMR via Vite's native `@vite/client`.
 
 ```clojure
 (z.assets/init {:manifest-path "myapp/.vite/manifest.json"
                 :asset-resource-path "myapp/assets"
-                :config-file "/path/to/vite.config.js"
-                :hot-reload :build
-                :cache-manifest? false})
-```
-
-#### Dev server mode (`:hot-reload :dev-server`)
-
-Starts a Vite dev server for instant CSS/JS HMR, and uses ring-hot-reload for
-Clojure/template changes. Assets are served directly from the Vite dev server.
-
-```clojure
-(z.assets/init {:manifest-path "myapp/.vite/manifest.json"
-                :asset-resource-path "myapp/assets"
-                :hot-reload :dev-server
-                :build? false})
+                :vite {:mode :dev-server}})
 ```
 
 In this mode:
-- CSS/JS changes are handled instantly by Vite's native HMR (no page reload)
-- Clojure source changes require REPL eval, then ring-hot-reload morphs the page
-- Template/static file changes take effect on save (read from disk each request)
 - `(assets "src/app.js")` returns `http://localhost:5173/src/app.js` instead of
   a manifest-resolved path
+- CSS/JS changes are handled instantly by Vite's native HMR (no page reload)
 
-#### nREPL middleware
+### Hot Reload for Clojure Templates
 
-For the best development experience, add the ring-hot-reload nREPL middleware
-so that evaluating code in your editor triggers a browser reload automatically —
-no file save needed.
-
-Add `.nrepl.edn` to your project:
-
-```clojure
-{:middleware [ring.hot-reload.nrepl/wrap-hot-reload-nrepl]}
-```
-
-Or configure it in CIDER via `.dir-locals.el` (appends to the existing middleware list):
-
-```elisp
-((clojure-mode
-  (eval . (progn
-            (make-local-variable 'cider-jack-in-nrepl-middlewares)
-            (add-to-list 'cider-jack-in-nrepl-middlewares "ring.hot-reload.nrepl/wrap-hot-reload-nrepl")))))
-```
-
-See the [ring-hot-reload README](https://github.com/brettatoms/ring-hot-reload)
-for more setup options and details.
+For automatic browser refresh when Clojure source or template files change,
+use [ring-hot-reload](https://github.com/brettatoms/ring-hot-reload) alongside
+zodiac-assets. The two are independent — zodiac-assets handles Vite/assets,
+ring-hot-reload handles server-rendered content reload via DOM morphing.

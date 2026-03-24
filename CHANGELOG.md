@@ -1,5 +1,18 @@
 # Change Log
 
+* 0.5.xx -- 2026-03-23
+  - Remove ring-hot-reload dependency (hot reload is now a separate concern)
+  - Replace `:build?`, `:hot-reload`, `:config-file`, `:package-json-dir`,
+    `:vite-host`, `:vite-port` with single `:vite` map option
+    (`{:mode :build}`, `{:mode :dev-server}`, or `nil`)
+  - Merge `::vite` and `::vite-dev-server` into single `::vite` Integrant
+    component with `:mode`
+  - Remove `::hot-reload` and `::hot-reload-middleware` Integrant components
+  - `::assets` now takes a vite ref directly instead of a pre-computed URL
+  - Use malli `:orn` schema for `:vite` option with per-mode validation
+  - Default values (`:mode`, `:host`, `:port`) driven by malli schema
+  - `:config-file` no longer required; Vite auto-resolves config in project root
+
 * 0.5.40 -- 2026-03-21
   - Add hot reload support using ring-hot-reload
 
