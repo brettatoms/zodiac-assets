@@ -87,11 +87,10 @@
     @(process/exit-ref p) ;; wait for the process to finish
     p))
 
-(defmethod ig/init-key ::vite [_ {:keys [config-file package-json-dir mode
-                                        host port]
-                                 :or {mode :build
-                                      host "localhost"
-                                      port 5173}}]
+(defmethod ig/init-key ::vite [_ {:keys [config-file package-json-dir mode host port]
+                                  :or {mode :build
+                                       host "localhost"
+                                       port 5173}}]
   (when-not (fs/which "npx")
     (log/warn "Could not find path to npx. Starting vite will probably fail."))
   (let [vite-cmd (case mode
@@ -100,7 +99,7 @@
                    :dev-server (cond-> ["npx" "vite"]
                                  config-file (concat ["--config" config-file])))
         _ (log/info (str "Starting vite (" (name mode) " mode)...\n"
-                        package-json-dir "$ " (str/join " " vite-cmd)))
+                         package-json-dir "$ " (str/join " " vite-cmd)))
         p (apply process/start {:dir package-json-dir} vite-cmd)]
     (capture-output p ::vite)
     {:process p
@@ -146,15 +145,14 @@
       (throw (ex-info "Invalid zodiac-assets options" {:validation-errors errors}))))
 
   (let [vite (when vite
-               (:vite (m/decode Options {:vite vite}
-                                       (mt/default-value-transformer
-                                         {::mt/add-optional-keys true}))))]
+               (:vite (m/decode Options {:vite vite} (mt/default-value-transformer
+                                                      {::mt/add-optional-keys true}))))]
     (fn [config]
       (let [config (cond-> config
                      vite
                      (assoc ::npm-install (select-keys vite [:package-json-dir])
                             ::vite (assoc (select-keys vite [:config-file :package-json-dir
-                                                            :mode :host :port])
+                                                             :mode :host :port])
                                           :__depends (ig/ref ::npm-install))))
             assets-opts (cond-> (select-keys options [:manifest-path :cache-manifest?])
                           vite (assoc :vite (ig/ref ::vite)))
