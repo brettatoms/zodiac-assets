@@ -145,6 +145,24 @@
       (is (= "0.0.0.0" (get-in config [::z.assets/vite :host])))
       (is (= 3000 (get-in config [::z.assets/vite :port]))))))
 
+(deftest init-vite-dev-server-injects-client-middleware-test
+  (testing "dev-server mode adds ::vite-client-middleware and wires it as user-middleware"
+    (let [config-fn (z.assets/init {:manifest-path "test/.vite/manifest.json"
+                                    :vite {:mode :dev-server}})
+          config (config-fn {})]
+      (is (contains? config ::z.assets/vite-client-middleware))
+      (is (= (ig/ref ::z.assets/vite)
+             (get-in config [::z.assets/vite-client-middleware :vite])))
+      (is (some #(= % (ig/ref ::z.assets/vite-client-middleware))
+                (get-in config [:zodiac.core/app :user-middleware]))))))
+
+(deftest init-vite-build-no-client-middleware-test
+  (testing "build mode does not add ::vite-client-middleware"
+    (let [config-fn (z.assets/init {:manifest-path "test/.vite/manifest.json"
+                                    :vite {:mode :build}})
+          config (config-fn {})]
+      (is (not (contains? config ::z.assets/vite-client-middleware))))))
+
 (deftest init-vite-empty-map-defaults-to-build-test
   (testing "empty vite map defaults to :mode :build"
     (let [config-fn (z.assets/init {:manifest-path "test/.vite/manifest.json"

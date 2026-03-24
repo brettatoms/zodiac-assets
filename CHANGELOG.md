@@ -1,6 +1,6 @@
 # Change Log
 
-* 0.5.xx -- 2026-03-23
+* 0.6.xx -- 2026-03-23
   - Replace `:build?`, `:hot-reload`, `:config-file`, `:package-json-dir`,
     `:vite-host`, `:vite-port` with single `:vite` map option
     (`{:mode :build}`, `{:mode :dev-server}`, or `nil`)

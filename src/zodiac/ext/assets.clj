@@ -132,6 +132,21 @@
             (memoize url-for)
             url-for))))))
 
+(defmethod ig/init-key ::vite-client-middleware [_ {:keys [vite]}]
+  (let [vite-client-url (str (:url vite) "/@vite/client")
+        tag (str "<script type=\"module\" src=\"" vite-client-url "\"></script>")]
+    (fn [handler]
+      (fn [request]
+        (let [response (handler request)]
+          (if (and (string? (:body response))
+                   (some-> (get-in response [:headers "Content-Type"]
+                                   (get-in response [:headers "content-type"]))
+                           (str/includes? "text/html"))
+                   (str/includes? (:body response) "<head"))
+            (update response :body
+                    #(str/replace-first % #"<head[^>]*>" (str "$0\n" tag)))
+            response))))))
+
 (defn init [{:keys [asset-resource-path asset-url-path context-key vite]
              :or {asset-resource-path ""
                   asset-url-path "/assets"
@@ -158,7 +173,13 @@
                           vite (assoc :vite (ig/ref ::vite)))
             resource-handler (reitit.ring/create-resource-handler {:path asset-url-path
                                                                    :root asset-resource-path})]
-        (-> config
-            (assoc ::assets assets-opts)
-            (assoc-in [::z/middleware :context context-key] (ig/ref ::assets))
-            (update-in [::z/app :default-handlers] #(cons resource-handler %)))))))
+        (cond-> config
+          true
+          (-> (assoc ::assets assets-opts)
+              (assoc-in [::z/middleware :context context-key] (ig/ref ::assets))
+              (update-in [::z/app :default-handlers] #(cons resource-handler %)))
+          ;; In dev-server mode, inject @vite/client script into HTML responses
+          (= (:mode vite) :dev-server)
+          (-> (assoc ::vite-client-middleware {:vite (ig/ref ::vite)})
+              (update-in [::z/app :user-middleware]
+                         #(vec (cons (ig/ref ::vite-client-middleware) %)))))))))
