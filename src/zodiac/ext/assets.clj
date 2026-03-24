@@ -133,8 +133,7 @@
             (memoize url-for)
             url-for))))))
 
-(defn init [{:keys [asset-resource-path asset-url-path context-key cache-manifest?
-                    vite]
+(defn init [{:keys [asset-resource-path asset-url-path context-key vite]
              :or {asset-resource-path ""
                   asset-url-path "/assets"
                   context-key ::assets
