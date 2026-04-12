@@ -146,7 +146,14 @@ rollupOptions: {
 }
 ```
 
-Each entry point gets its own manifest entry:
+Use `entry-tags` or `entry-html` to emit the correct tags for each entry:
+
+```clojure
+(z.assets/entry-tags assets "src/admin.js")
+(z.assets/entry-tags assets "src/public.js")
+```
+
+Or use the `assets` function directly for raw URL lookups:
 
 ```clojure
 (assets "src/admin.js")  ; => "/assets/admin-abc123.js"

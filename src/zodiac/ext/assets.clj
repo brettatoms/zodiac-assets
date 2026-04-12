@@ -111,26 +111,98 @@
   (log/info "Stopping vite...")
   (.destroy process))
 
+(defn- read-manifest [manifest-path]
+  (some-> manifest-path
+          (io/resource)
+          (slurp)
+          (json/read-json)))
+
+(defn- imported-chunks
+  "Recursively collect all imported chunks for a manifest entry.
+   Returns a seq of chunk maps for the entry's imports (not the entry itself),
+   following the imports graph depth-first."
+  [manifest entry-name]
+  (let [seen (volatile! #{})
+        walk (fn walk [name]
+               (when-not (@seen name)
+                 (vswap! seen conj name)
+                 (when-let [chunk (get manifest name)]
+                   (let [children (mapcat #(walk %) (get chunk "imports"))]
+                     (concat children [chunk])))))]
+    ;; Walk each import of the entry, but not the entry itself
+    (mapcat walk (get-in manifest [entry-name "imports"]))))
+
+(defn entry-tags
+  "Given an assets fn (from ::assets init-key) and an entry name, returns a list
+   of hiccup elements following Vite's recommended tag order:
+
+   1. <link rel=\"stylesheet\"> for each CSS file in the entry's css list
+   2. <link rel=\"stylesheet\"> for CSS files from recursively imported chunks
+   3. <script type=\"module\"> for JS entries, or <link rel=\"stylesheet\"> for CSS entries
+   4. <link rel=\"modulepreload\"> for each imported JS chunk (recursive)
+
+   Returns nil if entry-name is not found in the manifest.
+
+   In dev-server mode, only emits a <script type=\"module\"> tag pointing to the
+   Vite dev server (which handles CSS injection and HMR)."
+  [assets-fn entry-name]
+  (if (::dev-server? (meta assets-fn))
+    ;; Dev server mode: just the script tag
+    (list [:script {:type "module" :src (assets-fn entry-name)}])
+    ;; Build mode: full tag generation from manifest
+    (let [manifest  ((::manifest (meta assets-fn)))
+          entry     (get manifest entry-name)]
+      (when entry
+        (let [imports   (imported-chunks manifest entry-name)
+              css-file? (str/ends-with? (get entry "file" "") ".css")]
+          (concat
+           ;; 1. CSS from the entry itself
+           (for [css (get entry "css")]
+             [:link {:rel "stylesheet" :href (str "/" css)}])
+           ;; 2. CSS from imported chunks
+           (for [chunk imports
+                 css   (get chunk "css")]
+             [:link {:rel "stylesheet" :href (str "/" css)}])
+           ;; 3. The entry itself
+           (if css-file?
+             (list [:link {:rel "stylesheet" :href (str "/" (get entry "file"))}])
+             (list [:script {:type "module" :src (str "/" (get entry "file"))}]))
+           ;; 4. Modulepreload for imported JS chunks
+           (for [chunk imports
+                 :let [file (get chunk "file")]
+                 :when (and file (not (str/ends-with? file ".css")))]
+             [:link {:rel "modulepreload" :href (str "/" file)}])))))))
+
+(defn- tag->html [[tag attrs]]
+  (case tag
+    :link   (str "<link rel=\"" (:rel attrs) "\" href=\"" (:href attrs) "\" />")
+    :script (str "<script type=\"" (:type attrs) "\" src=\"" (:src attrs) "\"></script>")))
+
+(defn entry-html
+  "Like entry-tags, but returns an HTML string instead of hiccup.
+   Returns nil if entry-name is not found in the manifest."
+  [assets-fn entry-name]
+  (when-let [tags (entry-tags assets-fn entry-name)]
+    (str/join "\n" (map tag->html tags))))
+
 (defmethod ig/init-key ::assets [_ {:keys [manifest-path cache-manifest? vite]}]
   (let [vite-dev-server-url (:url vite)]
     (if vite-dev-server-url
       ;; Dev server mode: resolve assets to Vite dev server URLs
-      (fn [asset-name]
-        (str vite-dev-server-url "/" asset-name))
+      (vary-meta (fn [asset-name]
+                   (str vite-dev-server-url "/" asset-name))
+                 assoc ::dev-server? true)
       ;; Build mode: resolve assets from manifest
       (do
         (when-not (io/resource manifest-path)
           (log/warn "Could not find the manifest on the classpath: " manifest-path))
-        (let [url-for (fn [asset-name]
-                        (let [manifest (some-> manifest-path
-                                               (io/resource)
-                                               (slurp)
-                                               (json/read-json))]
-                          (when-let [url (get-in manifest [asset-name "file"])]
-                            (str "/" url))))]
-          (if cache-manifest?
-            (memoize url-for)
-            url-for))))))
+        (let [read-manifest* (if cache-manifest?
+                               (memoize #(read-manifest manifest-path))
+                               #(read-manifest manifest-path))
+              url-for (fn [asset-name]
+                        (when-let [url (get-in (read-manifest*) [asset-name "file"])]
+                          (str "/" url)))]
+          (vary-meta url-for assoc ::manifest read-manifest*))))))
 
 (defmethod ig/init-key ::vite-client-middleware [_ {:keys [vite]}]
   (let [vite-client-url (str (:url vite) "/@vite/client")

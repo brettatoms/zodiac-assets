@@ -30,15 +30,15 @@ For an example of how to use this extension see [examples/todo-app](examples/tod
             [zodiac.ext.assets :as z.assets]))
 
 (defn handler [{:keys [::z/context]}]
-  ;; The assets function in the request context can be used
-  ;; to get the url path to built assets from the Vite manifest.
   (let [{::z.assets/keys [assets]} context]
     [:html
      [:head
-       [:script {:src (assets "src/myapp.ts")}]]
-       [:link {:rel "stylesheet" :href (assets "src/myapp.css")}]
+      ;; entry-tags returns hiccup tags for all CSS and JS needed by this entry,
+      ;; including stylesheets from imported chunks and modulepreload hints.
+      (z.assets/entry-tags assets "src/myapp.css")]
      [:body
-       [:div "hello world"]]]))
+      [:div "hello world"]
+      (z.assets/entry-tags assets "src/myapp.ts")]]))
 
 (defn routes []
   ["/" {:get #'handler}])
@@ -110,6 +110,43 @@ The `zodiac.ext.assets/init` accepts the following options:
   - `:package-json-dir` — directory containing `package.json` for `npm install`
   - `:host` — dev server host (default `"localhost"`, `:dev-server` mode only)
   - `:port` — dev server port (default `5173`, `:dev-server` mode only)
+
+### Rendering Entry Point Tags
+
+Use `entry-tags` or `entry-html` to emit the full set of HTML tags for a Vite
+entry point. These follow
+[Vite's backend integration](https://vite.dev/guide/backend-integration)
+recommendations, including stylesheets from imported chunks and `modulepreload`
+hints.
+
+`entry-tags` returns hiccup vectors — use it in hiccup templates:
+
+```clojure
+(let [{::z.assets/keys [assets]} context]
+  [:html
+   [:head
+    (z.assets/entry-tags assets "src/app.css")]
+   [:body
+    (z.assets/entry-tags assets "src/app.ts")]])
+```
+
+`entry-html` returns an HTML string — use it when building HTML strings directly:
+
+```clojure
+(let [{::z.assets/keys [assets]} context]
+  (z.assets/entry-html assets "src/app.ts"))
+;; => "<link rel=\"stylesheet\" href=\"/assets/app-abc123.css\" />\n<script type=\"module\" src=\"/assets/app-def456.js\"></script>"
+```
+
+Both functions handle dev-server mode automatically — in dev mode they emit a
+single `<script>` tag pointing to the Vite dev server.
+
+The `assets` function from the request context is still available for direct URL
+lookups when you need a raw asset path (e.g. for images):
+
+```clojure
+[:img {:src (assets "src/logo.png")}]
+```
 
 ### Dev Server Mode
 

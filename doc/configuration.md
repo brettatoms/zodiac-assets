@@ -80,6 +80,9 @@ Key for the assets function in the Zodiac request context. Defaults to `:zodiac.
 ;; Access in handler
 (defn handler [{:keys [::z/context]}]
   (let [assets (:my-app/assets context)]
+    ;; Use entry-tags for full tag generation (CSS, modulepreload, etc.)
+    (z.assets/entry-tags assets "src/style.css")
+    ;; Or use the assets fn directly for raw URL lookups
     [:link {:href (assets "src/style.css")}]))
 ```
 

@@ -1,6 +1,7 @@
 (ns zodiac.ext.assets-test
   (:require [clojure.java.io :as io]
             [clojure.java.shell :as shell]
+            [clojure.string :as str]
             [clojure.test :refer [deftest is testing use-fixtures]]
             [integrant.core :as ig]
             [spy.core :as spy]
@@ -444,3 +445,173 @@
           (is (some? errors))
           (is (contains? errors :manifest-path))
           (is (contains? errors :vite)))))))
+
+;; ============================================================================
+;; entry-tags / entry-html Tests
+;; ============================================================================
+
+(defn- make-assets-fn
+  "Create an assets fn from ::assets init-key for testing."
+  ([] (make-assets-fn {}))
+  ([opts]
+   (ig/init-key ::z.assets/assets
+                (merge {:manifest-path test-manifest-path
+                        :cache-manifest? false}
+                       opts))))
+
+(deftest entry-tags-simple-js-test
+  (testing "simple JS entry with no CSS or imports"
+    (let [assets (make-assets-fn)
+          tags (z.assets/entry-tags assets "src/app.js")]
+      ;; Should have exactly one tag: the script
+      (is (= 1 (count tags)))
+      (let [[tag-name attrs] (first tags)]
+        (is (= :script tag-name))
+        (is (= "module" (:type attrs)))
+        (is (re-matches #"/assets/app-[a-zA-Z0-9]+\.js" (:src attrs)))))))
+
+(deftest entry-tags-css-entry-test
+  (testing "CSS entry emits a link stylesheet, not a script"
+    (let [assets (make-assets-fn)
+          tags (z.assets/entry-tags assets "src/style.css")]
+      (is (= 1 (count tags)))
+      (let [[tag-name attrs] (first tags)]
+        (is (= :link tag-name))
+        (is (= "stylesheet" (:rel attrs)))
+        (is (re-matches #"/assets/style-[a-zA-Z0-9]+\.css" (:href attrs)))))))
+
+(deftest entry-tags-js-with-css-test
+  (testing "JS entry with own CSS and imported chunk CSS"
+    (let [assets (make-assets-fn)
+          tags (vec (z.assets/entry-tags assets "src/app-with-css.js"))]
+      ;; Should have:
+      ;; 1. link stylesheet for app-with-css's own CSS
+      ;; 2. link stylesheet for shared chunk's CSS
+      ;; 3. script for app-with-css.js
+      ;; 4. modulepreload for shared.js
+      (is (= 4 (count tags)))
+
+      ;; First two should be link stylesheets
+      (is (= :link (first (nth tags 0))))
+      (is (= "stylesheet" (:rel (second (nth tags 0)))))
+      (is (re-matches #"/assets/app-with-css-[a-zA-Z0-9]+\.css"
+                      (:href (second (nth tags 0)))))
+
+      (is (= :link (first (nth tags 1))))
+      (is (= "stylesheet" (:rel (second (nth tags 1)))))
+      (is (re-matches #"/assets/shared-[a-zA-Z0-9]+\.css"
+                      (:href (second (nth tags 1)))))
+
+      ;; Third should be the script
+      (is (= :script (first (nth tags 2))))
+      (is (= "module" (:type (second (nth tags 2)))))
+
+      ;; Fourth should be modulepreload for shared chunk
+      (is (= :link (first (nth tags 3))))
+      (is (= "modulepreload" (:rel (second (nth tags 3)))))
+      (is (re-matches #"/assets/shared-[a-zA-Z0-9]+\.js"
+                      (:href (second (nth tags 3))))))))
+
+(deftest entry-tags-imports-only-test
+  (testing "JS entry with no own CSS but imports chunk that has CSS"
+    (let [assets (make-assets-fn)
+          tags (vec (z.assets/entry-tags assets "src/page.js"))]
+      ;; Should have:
+      ;; 1. link stylesheet for shared chunk's CSS (from imports)
+      ;; 2. script for page.js
+      ;; 3. modulepreload for shared.js
+      (is (= 3 (count tags)))
+
+      ;; First: shared CSS
+      (is (= :link (first (nth tags 0))))
+      (is (= "stylesheet" (:rel (second (nth tags 0)))))
+      (is (re-matches #"/assets/shared-[a-zA-Z0-9]+\.css"
+                      (:href (second (nth tags 0)))))
+
+      ;; Second: the script
+      (is (= :script (first (nth tags 1))))
+
+      ;; Third: modulepreload
+      (is (= :link (first (nth tags 2))))
+      (is (= "modulepreload" (:rel (second (nth tags 2))))))))
+
+(deftest entry-tags-missing-entry-test
+  (testing "missing entry returns nil"
+    (let [assets (make-assets-fn)
+          tags (z.assets/entry-tags assets "nonexistent.js")]
+      (is (nil? tags)))))
+
+(deftest entry-tags-dev-server-test
+  (testing "in dev-server mode, only emits script tag"
+    (let [assets (ig/init-key ::z.assets/assets
+                              {:manifest-path test-manifest-path
+                               :cache-manifest? false
+                               :vite {:url "http://localhost:5173"}})
+          tags (vec (z.assets/entry-tags assets "src/app-with-css.js"))]
+      ;; Dev mode: just one script tag, no CSS links or modulepreload
+      (is (= 1 (count tags)))
+      (let [[tag-name attrs] (first tags)]
+        (is (= :script tag-name))
+        (is (= "module" (:type attrs)))
+        (is (= "http://localhost:5173/src/app-with-css.js" (:src attrs)))))))
+
+(deftest entry-tags-css-order-test
+  (testing "entry's own CSS comes before imported chunk CSS"
+    (let [assets (make-assets-fn)
+          tags (vec (z.assets/entry-tags assets "src/app-with-css.js"))
+          css-tags (filterv #(and (= :link (first %))
+                                  (= "stylesheet" (:rel (second %))))
+                            tags)
+          css-hrefs (mapv #(:href (second %)) css-tags)]
+      ;; app-with-css's own CSS should come before shared's CSS
+      (is (= 2 (count css-hrefs)))
+      (is (re-matches #"/assets/app-with-css-.*\.css" (first css-hrefs)))
+      (is (re-matches #"/assets/shared-.*\.css" (second css-hrefs))))))
+
+;; ============================================================================
+;; entry-html Tests
+;; ============================================================================
+
+(deftest entry-html-simple-js-test
+  (testing "simple JS entry produces a script tag"
+    (let [assets (make-assets-fn)
+          html (z.assets/entry-html assets "src/app.js")]
+      (is (re-matches #"<script type=\"module\" src=\"/assets/app-[a-zA-Z0-9]+\.js\"></script>"
+                      html)))))
+
+(deftest entry-html-css-entry-test
+  (testing "CSS entry produces a link tag"
+    (let [assets (make-assets-fn)
+          html (z.assets/entry-html assets "src/style.css")]
+      (is (re-matches #"<link rel=\"stylesheet\" href=\"/assets/style-[a-zA-Z0-9]+\.css\" />"
+                      html)))))
+
+(deftest entry-html-js-with-css-test
+  (testing "JS entry with CSS produces multi-line HTML in correct order"
+    (let [assets (make-assets-fn)
+          html (z.assets/entry-html assets "src/app-with-css.js")
+          lines (str/split-lines html)]
+      (is (= 4 (count lines)))
+      (is (re-matches #"<link rel=\"stylesheet\" href=\"/assets/app-with-css-.*\.css\" />"
+                      (nth lines 0)))
+      (is (re-matches #"<link rel=\"stylesheet\" href=\"/assets/shared-.*\.css\" />"
+                      (nth lines 1)))
+      (is (re-matches #"<script type=\"module\" src=\"/assets/app-with-css-.*\.js\"></script>"
+                      (nth lines 2)))
+      (is (re-matches #"<link rel=\"modulepreload\" href=\"/assets/shared-.*\.js\" />"
+                      (nth lines 3))))))
+
+(deftest entry-html-missing-entry-test
+  (testing "missing entry returns nil"
+    (let [assets (make-assets-fn)]
+      (is (nil? (z.assets/entry-html assets "nonexistent.js"))))))
+
+(deftest entry-html-dev-server-test
+  (testing "dev-server mode produces a single script tag"
+    (let [assets (ig/init-key ::z.assets/assets
+                              {:manifest-path test-manifest-path
+                               :cache-manifest? false
+                               :vite {:url "http://localhost:5173"}})
+          html (z.assets/entry-html assets "src/app-with-css.js")]
+      (is (= "<script type=\"module\" src=\"http://localhost:5173/src/app-with-css.js\"></script>"
+             html)))))

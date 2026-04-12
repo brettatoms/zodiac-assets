@@ -7,6 +7,8 @@ export default defineConfig({
     rollupOptions: {
       input: [
         "src/app.js",
+        "src/app-with-css.js",
+        "src/page.js",
         "src/style.css",
       ],
     },

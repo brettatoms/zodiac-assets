@@ -50,8 +50,7 @@
     [:meta {:name "viewport"
             :content "width=device-width, initial-scale=1"}]
     [:style "[x-cloak] {display: none !important;}"]
-    [:link {:rel "stylesheet"
-            :href (assets "src/todo.css")}]]
+    (z.assets/entry-tags assets "src/todo.css")]
    [:body {:hx-ext "alpine-morph"
            :hx-swap "morph"
            :x-data ""
@@ -61,8 +60,7 @@
       [:h1 {:class "text-xl mb-2"} "Todo"]
       (form)
       (todo-list @db)]]
-     [:script {:src (assets "src/todo.ts")
-               :type "module"}]]])
+    (z.assets/entry-tags assets "src/todo.ts")]])
 
 (defn handler [{:keys [::z/context request-method form-params]}]
   (let [{::z.assets/keys [assets] :keys [db]} context]
